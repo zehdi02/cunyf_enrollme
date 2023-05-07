@@ -1,0 +1,203 @@
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+
+import time
+from datetime import datetime
+
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.keys import Keys
+
+from selenium.common.exceptions import NoSuchElementException
+
+import openpyxl
+from openpyxl import load_workbook
+from openpyxl.styles import PatternFill
+
+import os
+
+url = 'https://globalsearch.cuny.edu/CFGlobalSearchTool/search.jsp'
+
+options = webdriver.ChromeOptions()
+options.add_experimental_option("detach", True)
+
+driver = webdriver.Chrome(options=options)
+driver.get(url)
+
+time.sleep(1)
+
+# Page 1
+print("Page #1:")
+# Institution
+driver.find_element(By.CSS_SELECTOR, '#CTY01').click()
+time.sleep(1)
+# Term: choose SPRING[4], SUMMER[3], FALL[2]
+driver.find_element(By.XPATH, '//*[@id="t_pd"]/option[2]').click()
+time.sleep(1)
+# Next button
+driver.find_element(By.CLASS_NAME, 'SSSBUTTON_CONFIRMLINK').click()
+print("Clicked the 'NEXT' button" + '\n')
+time.sleep(2)
+
+# Page 2
+print("Page #2:")
+# Subject: SPRING[21], SUMMER[14], FALL[19]
+driver.find_element(By.XPATH, '//*[@id="subject_ld"]/option[19]').click()
+time.sleep(1)
+# Course Career
+driver.find_element(By.XPATH, '//*[@id="courseCareerId"]/option[4]').click()
+time.sleep(1)
+# Shown Open Classes Only
+driver.find_element(By.XPATH, '//*[@id="open_classId"]').click()
+time.sleep(1)
+# Search
+driver.find_element(By.ID, 'btnGetAjax').click()
+print("Clicked the 'SEARCH' button" + '\n')
+time.sleep(2)
+
+# Page 3
+print("Page #3:")
+# Show courses
+driver.find_element(By.ID, 'imageDivLink_inst0').click()
+print("Subject drop down clicked" + '\n')
+time.sleep(1)
+
+# data lists
+cs_title_list = []
+cs_section_list = []
+cs_DnT_list = []
+cs_availability_list = []
+cs_instructors_list = []
+cs_mode_list = []
+
+# Show all classes
+i = 0 # courses
+j = 2 # classes in a course. 2 is starting index of row
+# Course/Class counters
+cs_courses = 1 
+cs_classes = 0
+cs_classes_sum = 0
+# Clicks course drop down
+while True:
+    try:
+        driver.find_element(By.ID, 'imageDivLink{}'.format(i)).click()
+        while True:
+            try: 
+                # Find class' title
+                cs_title = driver.find_element(By.XPATH, '//*[@id="contentDivImg_inst0"]/table[{}]/tbody/tr/td/b/span[@class="cunylite_LABEL"]'
+                                               .format(cs_courses)).text
+                # Find class' section
+                cs_section = driver.find_element(By.XPATH, '//*[@id="contentDivImg{}"]/table/tbody/tr[{}]/td[3]'
+                                                 .format(i,j)).text
+                # Find class' Days & Times
+                cs_DnT = driver.find_element(By.XPATH, '//*[@id="contentDivImg{}"]/table/tbody/tr[{}]/td[4]'
+                                                 .format(i,j)).text
+                # Find class' availability
+                cs_availability = driver.find_element(By.XPATH, '//*[@id="contentDivImg{}"]/table/tbody/tr[{}]/td[9]/img'
+                                                 .format(i,j))
+                availability = cs_availability.get_attribute('title')
+                # Find class' instructors
+                cs_instructors = driver.find_element(By.XPATH, '//*[@id="contentDivImg{}"]/table/tbody/tr[{}]/td[6]'
+                                                .format(i,j)).text
+                # Find class' instruction mode
+                cs_mode = driver.find_element(By.XPATH, '//*[@id="contentDivImg{}"]/table/tbody/tr[{}]/td[7]'
+                                                .format(i,j)).text
+                # if availability == 'Open':
+                cs_title_list.append(cs_title)
+                cs_section_list.append(cs_section)
+                cs_DnT_list.append(cs_DnT)
+                cs_availability_list.append(availability)
+                cs_instructors_list.append(cs_instructors)
+                cs_mode_list.append(cs_mode)
+                # Next class
+                cs_classes += 1
+                cs_classes_sum += 1
+                j += 1
+            except NoSuchElementException:
+                # print(cs_classes, 'classes founded.')
+                break
+        print(cs_classes, 'class(es) found:', cs_title)
+        i += 1  # Next course
+        cs_courses += 1 # next course title
+        j = 2   # reset starting index of classes row
+        cs_classes = 0
+    except NoSuchElementException:
+        print('\n' + "CUNYFirst Global Search data collection done.")
+        print(i, 'CS courses found.')
+        print(cs_classes_sum, 'CS class sections in total.' + '\n')
+        break
+
+# Import data to xlsx
+header = ["Course", "Section", "Days & Time", "Availability", "Instructors", "Mode"]
+data = []
+for i in range(len(cs_title_list)):
+    data.append((cs_title_list[i], cs_section_list[i], cs_DnT_list[i], cs_availability_list[i], cs_instructors_list[i], cs_mode_list[i]))
+
+# Create a new workbook
+workbook = openpyxl.Workbook()
+
+# Select the active worksheet
+worksheet = workbook.active
+
+# Set the header row
+header = ["Course", "Section", "Days & Time", "Availability", "Instructors", "Mode"]
+worksheet.append(header)
+
+# Add the data
+for i in range(len(cs_title_list)):
+    row = [cs_title_list[i], cs_section_list[i], cs_DnT_list[i], cs_availability_list[i], cs_instructors_list[i], cs_mode_list[i]]
+    worksheet.append(row)
+
+# Get current time and date
+now = datetime.now()
+current_date_time = now.strftime("%Y%m%d - %H%M")
+
+xlsx_f = str(current_date_time) + " - CCNY CS Classes.xlsx"
+
+# specify directory/file path
+dir = 'C:/Users/Zed/Documents/Code/repos/cunyf_enrollme/class-status-logs'
+fp = os.path.join(dir, xlsx_f)
+# Save the workbook
+workbook.save(fp)
+
+print("XLSX file created with CS classes information!")
+
+wb = load_workbook(fp)
+ws = wb['Sheet']
+
+# Update column width
+ws.column_dimensions['A'].width = 50
+ws.column_dimensions['B'].width = 20
+ws.column_dimensions['C'].width = 25
+ws.column_dimensions['D'].width = 15
+ws.column_dimensions['E'].width = 20
+ws.column_dimensions['F'].width = 20
+
+# Update row height
+# enable text wrapping for the cells
+for cell in ws['C:C']:
+    cell.alignment = openpyxl.styles.Alignment(wrap_text=True)
+for cell in ws['E:E']:
+    cell.alignment = openpyxl.styles.Alignment(wrap_text=True)
+# set the row height to auto adjust for all rows
+for row in ws.iter_rows():
+    for cell in row:
+        cell.alignment = openpyxl.styles.Alignment(wrap_text=True)
+    row[0].parent.auto_size = True
+
+# Green = "Open", Blue = "Closed"
+fillGreen = PatternFill(start_color='00FF00', end_color='00FF00', fill_type='solid')
+fillBlue = PatternFill(start_color='0000FF', end_color='0000FF', fill_type='solid')
+for row in ws.iter_rows():
+    for cell in row:
+        if 'Open' in cell.value:
+            cell.fill = fillGreen
+        elif 'Closed' in cell.value:
+            cell.fill = fillBlue
+        
+
+wb.save(fp)
+wb.close()
+# print("XLSX file contents updated!")
+
+time.sleep(10)
