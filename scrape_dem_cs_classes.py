@@ -22,6 +22,25 @@ import os
 import smtplib
 
 while True:
+    try:
+        term = input("Enter semester (fall, winter, spring, summer): ")
+        if term.lower() not in ["fall", "winter", "spring", "summer"]:
+            raise ValueError("Invalid semester entered.")
+        break
+    except ValueError as e:
+        print(e)
+
+while True:
+    try:
+        show_open = input("Show Open classes only (yes/no)?: ")
+        if show_open.lower() not in ['yes', 'no']:
+            raise ValueError("Please enter 'yes' or 'no'")
+        break
+    except ValueError as e:
+        print(e)
+
+while True:
+
     url = 'https://globalsearch.cuny.edu/CFGlobalSearchTool/search.jsp'
 
     options = webdriver.ChromeOptions()
@@ -30,44 +49,61 @@ while True:
     driver = webdriver.Chrome(options=options)
     driver.get(url)
 
-    time.sleep(1)
+    print("Page #1:")
+    time.sleep(3)
 
     # Page 1
-    print("Page #1:")
     # Institution
     driver.find_element(By.CSS_SELECTOR, '#CTY01').click()
+    print("clicked City College of New York")
     time.sleep(1)
     # Term: choose SPRING[4], SUMMER[3], FALL[2]
-    driver.find_element(By.XPATH, '//*[@id="t_pd"]/option[3]').click()
+    term_options = []
+    if term.lower() == 'spring':
+        term_options.append(4)
+        term_options.append(21)
+    elif term.lower() == 'summer':
+        term_options.append(3)
+        term_options.append(14)
+    elif term.lower() == 'fall':
+        term_options.append(2)
+        term_options.append(19)
+    driver.find_element(By.XPATH, '//*[@id="t_pd"]/option[{}]'
+                        .format(term_options[0])).click()
+    print("clicked", term.upper(), "semester")
     time.sleep(1)
     # Next button
     driver.find_element(By.CLASS_NAME, 'SSSBUTTON_CONFIRMLINK').click()
-    print("Clicked the 'NEXT' button" + '\n')
-    time.sleep(2)
+    print("clicked 'NEXT' button" + '\n')
+
+    print("Page #2:")
+    time.sleep(3)
 
     # Page 2
-    print("Page #2:")
     # Subject: SPRING[21], SUMMER[14], FALL[19]
-    driver.find_element(By.XPATH, '//*[@id="subject_ld"]/option[14]').click()
+    driver.find_element(By.XPATH, '//*[@id="subject_ld"]/option[{}]'
+                        .format(term_options[1])).click()
+    print("clicked Computer Science subject")
     time.sleep(1)
     # Course Career
     driver.find_element(By.XPATH, '//*[@id="courseCareerId"]/option[4]').click()
+    print("clicked Undergraduate")
     time.sleep(1)
     # Shown Open Classes Only
-    driver.find_element(By.XPATH, '//*[@id="open_classId"]').click()
-    time.sleep(1)
+    if show_open.lower() == 'no':
+        driver.find_element(By.XPATH, '//*[@id="open_classId"]').click()
+        print("show ALL Classes")
+        time.sleep(1)
+    else:
+        print("show OPEN Classes only")
     # Search
     driver.find_element(By.ID, 'btnGetAjax').click()
-    print("Clicked the 'SEARCH' button" + '\n')
-    time.sleep(2)
+    print("clicked 'SEARCH' button" + '\n')
+    
+    print("Page #3:")
+    time.sleep(3)
 
     # Page 3
-    print("Page #3:")
-    # Show courses
-    driver.find_element(By.ID, 'imageDivLink_inst0').click()
-    print("Subject drop down clicked" + '\n')
-    time.sleep(1)
-
     # data lists
     cs_title_list = []
     cs_section_list = []
@@ -75,6 +111,10 @@ while True:
     cs_availability_list = []
     cs_instructors_list = []
     cs_mode_list = []
+    # Show courses
+    driver.find_element(By.ID, 'imageDivLink_inst0').click()
+    print("showing ALL Courses..." + '\n')
+    time.sleep(1)
 
     # Show all classes
     i = 0 # courses
@@ -122,15 +162,15 @@ while True:
                 except NoSuchElementException:
                     # print(cs_classes, 'classes founded.')
                     break
-            print(cs_classes, 'class(es) found:', cs_title)
+            print(cs_classes, 'class(es) found in:' + cs_title)
             i += 1  # Next course
             cs_courses += 1 # next course title
             j = 2   # reset starting index of classes row
             cs_classes = 0
         except NoSuchElementException:
-            print('\n' + "CUNYFirst Global Search data collection done.")
-            print(i, 'CS courses found.')
-            print(cs_classes_sum, 'CS class sections in total.' + '\n')
+            print('\n' + "Finished collecting all CS courses data.")
+            print(i, 'CS Courses found.')
+            print(cs_classes_sum, 'CS Class Sections in total.' + '\n')
             break
 
     # Import data to xlsx
@@ -156,9 +196,9 @@ while True:
 
     # Get current time and date
     now = datetime.now()
-    current_date_time = now.strftime("%Y%m%d - %H%M")
+    current_date_time = now.strftime("%Y%m%d-%H%M")
 
-    xlsx_f = str(current_date_time) + " - CCNY CS Classes.xlsx"
+    xlsx_f = str(current_date_time) + "_" + term.upper() + "_CCNY_CS_Classes.xlsx"
 
     # specify directory/file path
     dir = 'C:/Users/Zed/Documents/Code/repos/cunyf_enrollme/class-status-logs'
@@ -166,18 +206,18 @@ while True:
     # Save the workbook
     workbook.save(fp)
 
-    print("XLSX file created with CS classes information!")
+    print("Created XLSX file named:" + '\n\t' + xlsx_f)
 
     wb = load_workbook(fp)
     ws = wb['Sheet']
 
     # Update column width
-    ws.column_dimensions['A'].width = 50
+    ws.column_dimensions['A'].width = 40
     ws.column_dimensions['B'].width = 20
     ws.column_dimensions['C'].width = 25
-    ws.column_dimensions['D'].width = 15
+    ws.column_dimensions['D'].width = 11
     ws.column_dimensions['E'].width = 20
-    ws.column_dimensions['F'].width = 20
+    ws.column_dimensions['F'].width = 10
 
     # Update row height
     # enable text wrapping for the cells
@@ -297,6 +337,11 @@ while True:
             elif 'Closed' in cell.value:
                 cell.fill = fillBlue
 
+    # save and close updated xlsx file
+    wb.save(fp)
+    wb.close()
+    print("XLSX file contents updated!" + "\n")
+
     # auto email
     # set up the SMTP server
     # smtp_server = 'smtp.gmail.com'
@@ -305,11 +350,6 @@ while True:
     # smtp_password = 'your_email_password'   # replace with your email password
     # sender_email = 'your_email@gmail.com'   # replace with your email address
     # recipient_email = 'recipient_email@example.com'  # replace with the recipient's email address
-
-    # save and close updated xlsx file
-    wb.save(fp)
-    wb.close()
-    print("XLSX file contents updated!" + "\n")
 
     print("Data scraped successfully!")
     driver.quit()
