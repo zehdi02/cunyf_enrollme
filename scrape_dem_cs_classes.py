@@ -21,34 +21,19 @@ import os
 # for auto-mailing
 import smtplib
 
-while True:
-    try:
-        term = input("Enter semester (fall, winter, spring, summer): ")
-        if term.lower() not in ["fall", "winter", "spring", "summer"]:
-            raise ValueError("Invalid semester entered.")
-        break
-    except ValueError as e:
-        print(e)
+term = ''
+term_options = []
+show_open = ''
 
-while True:
-    try:
-        show_open = input("Show Open classes only (yes/no)?: ")
-        if show_open.lower() not in ['yes', 'no']:
-            raise ValueError("Please enter 'yes' or 'no'")
-        break
-    except ValueError as e:
-        print(e)
+# data lists
+cs_title_list = []
+cs_section_list = []
+cs_DnT_list = []
+cs_availability_list = []
+cs_instructors_list = []
+cs_mode_list = []
 
-while True:
-
-    url = 'https://globalsearch.cuny.edu/CFGlobalSearchTool/search.jsp'
-
-    options = webdriver.ChromeOptions()
-    options.add_experimental_option("detach", True)
-
-    driver = webdriver.Chrome(options=options)
-    driver.get(url)
-
+def autoPage1():
     print("Page #1:")
     time.sleep(3)
 
@@ -58,7 +43,6 @@ while True:
     print("clicked City College of New York")
     time.sleep(1)
     # Term: choose SPRING[4], SUMMER[3], FALL[2]
-    term_options = []
     if term.lower() == 'spring':
         term_options.append(4)
         term_options.append(21)
@@ -75,7 +59,7 @@ while True:
     # Next button
     driver.find_element(By.CLASS_NAME, 'SSSBUTTON_CONFIRMLINK').click()
     print("clicked 'NEXT' button" + '\n')
-
+def autoPage2():
     print("Page #2:")
     time.sleep(3)
 
@@ -99,23 +83,17 @@ while True:
     # Search
     driver.find_element(By.ID, 'btnGetAjax').click()
     print("clicked 'SEARCH' button" + '\n')
-    
+def autoPage3():
+    # Page 3
+    # Show courses
     print("Page #3:")
     time.sleep(3)
-
-    # Page 3
-    # data lists
-    cs_title_list = []
-    cs_section_list = []
-    cs_DnT_list = []
-    cs_availability_list = []
-    cs_instructors_list = []
-    cs_mode_list = []
-    # Show courses
     driver.find_element(By.ID, 'imageDivLink_inst0').click()
     print("showing ALL Courses..." + '\n')
     time.sleep(1)
+    scrapeSearch()
 
+def scrapeSearch():
     # Show all classes
     i = 0 # courses
     j = 2 # classes in a course. 2 is starting index of row
@@ -123,9 +101,9 @@ while True:
     cs_courses = 1 
     cs_classes = 0
     cs_classes_sum = 0
-    # Clicks course drop down
     while True:
         try:
+            # Clicks course drop down
             driver.find_element(By.ID, 'imageDivLink{}'.format(i)).click()
             while True:
                 try: 
@@ -173,6 +151,7 @@ while True:
             print(cs_classes_sum, 'CS Class Sections in total.' + '\n')
             break
 
+def importXLSX():
     # Import data to xlsx
     header = ["Course", "Section", "Days & Time", "Availability", "Instructors", "Mode"]
     data = []
@@ -201,16 +180,53 @@ while True:
     xlsx_f = str(current_date_time) + "_" + term.upper() + "_CCNY_CS_Classes.xlsx"
 
     # specify directory/file path
-    dir = 'C:/Users/Zed/Documents/Code/repos/cunyf_enrollme/class-status-logs'
-    fp = os.path.join(dir, xlsx_f)
+    dir = 'C:/Users/Zed/Documents/Code/repos/cunyf_enrollme/class-status-logs/'
+    current_date = now.strftime("%Y%m%d")
+    date_dir = dir + current_date
+    # make date specific directory
+    if os.path.exists(date_dir):
+        print("Folder /" + current_date_time + "/ already exists" + '\n')
+    else:
+        print("Created folder /" + current_date_time + '/\n')
+        os.makedirs(date_dir)
+
+    fp = os.path.join(date_dir, xlsx_f)
     # Save the workbook
     workbook.save(fp)
 
-    print("Created XLSX file named:" + '\n\t' + xlsx_f)
+    print("Created XLSX file named:" + '\n\t' + xlsx_f + '\n')
 
     wb = load_workbook(fp)
     ws = wb['Sheet']
 
+    # update xlsx
+    updateXLSX(ws)
+    wb.save(fp)
+    wb.close()
+    
+    # rename xlsx file if class im eyeing on is open
+    found_csc = False
+    found_open = False
+    # class_i_want = "  CSC 31160 - Intro to Blockchain"
+    class_i_want = "  CSC 34200 - Computer Organization"
+    for row in ws.iter_rows():
+        if row[0].value in class_i_want:
+            found_csc = True
+            print("Found" + class_i_want)
+            for cell in row:
+                if cell.value == "Open":
+                    found_open = True
+                    print(class_i_want, "is open" + '\n')
+                
+    if found_csc and found_open:
+        new_xlsx = class_i_want + '_' + xlsx_f
+        new_fp = os.path.join(date_dir, new_xlsx)
+        os.rename(fp, new_fp)
+        print("XLSX file renamed to:" + '\n\t' + new_xlsx + '\n')
+    else:
+        print(class_i_want, "is NOT open" + '\n')
+
+def updateXLSX_cols_rows(ws):
     # Update column width
     ws.column_dimensions['A'].width = 40
     ws.column_dimensions['B'].width = 20
@@ -230,7 +246,7 @@ while True:
         for cell in row:
             cell.alignment = openpyxl.styles.Alignment(wrap_text=True)
         row[0].parent.auto_size = True
-
+def colorXLSX_data(ws):
     # WANTED courses      
     desired_courses = ['  CSC 30100 - Scientific Prgrmng',
                        '  CSC 30400 - Intro to Theoretical Comp Sci',
@@ -337,21 +353,51 @@ while True:
             elif 'Closed' in cell.value:
                 cell.fill = fillBlue
 
-    # save and close updated xlsx file
-    wb.save(fp)
-    wb.close()
-    print("XLSX file contents updated!" + "\n")
+def updateXLSX(ws):
+    # update columns and rows
+    updateXLSX_cols_rows(ws)
+    # color code cells
+    colorXLSX_data(ws)
 
-    # auto email
-    # set up the SMTP server
-    # smtp_server = 'smtp.gmail.com'
-    # smtp_port = 587  # use 465 for SSL/TLS encryption
-    # smtp_username = 'vmonet2022@gmail.com'  # replace with your email address
-    # smtp_password = 'your_email_password'   # replace with your email password
-    # sender_email = 'your_email@gmail.com'   # replace with your email address
-    # recipient_email = 'recipient_email@example.com'  # replace with the recipient's email address
+    
+
+while True:
+    try:
+        term = input("Enter semester (fall, winter, spring, summer): ")
+        if term.lower() not in ["fall", "winter", "spring", "summer"]:
+            raise ValueError("Invalid semester entered.")
+        break
+    except ValueError as e:
+        print(e)
+
+while True:
+    try:
+        show_open = input("Show Open classes only (yes/no)?: ")
+        if show_open.lower() not in ['yes', 'no']:
+            raise ValueError("Please enter 'yes' or 'no'")
+        break
+    except ValueError as e:
+        print(e)
+
+while True:
+    url = 'https://globalsearch.cuny.edu/CFGlobalSearchTool/search.jsp'
+
+    options = webdriver.ChromeOptions()
+    options.add_experimental_option("detach", True)
+
+    driver = webdriver.Chrome(options=options)
+    driver.get(url)
+
+    autoPage1()
+    autoPage2()
+    autoPage3()
+    importXLSX()
 
     print("Data scraped successfully!")
     driver.quit()
-    print("Starting up again in 60 seconds.")
+    print("Page closed down." + '\n')
+    time.sleep(3)
+
+    print("Scraping again in 60 seconds.")
     time.sleep(60)
+    

@@ -33,8 +33,6 @@ cs_availability_list = []
 cs_instructors_list = []
 cs_mode_list = []
 
-
-
 def autoPage1():
     print("Page #1:")
     time.sleep(3)
@@ -61,7 +59,6 @@ def autoPage1():
     # Next button
     driver.find_element(By.CLASS_NAME, 'SSSBUTTON_CONFIRMLINK').click()
     print("clicked 'NEXT' button" + '\n')
-
 def autoPage2():
     print("Page #2:")
     time.sleep(3)
@@ -86,7 +83,6 @@ def autoPage2():
     # Search
     driver.find_element(By.ID, 'btnGetAjax').click()
     print("clicked 'SEARCH' button" + '\n')
-
 def autoPage3():
     # Page 3
     # Show courses
@@ -184,25 +180,53 @@ def importXLSX():
     xlsx_f = str(current_date_time) + "_" + term.upper() + "_CCNY_CS_Classes.xlsx"
 
     # specify directory/file path
-    dir = 'C:/Users/Zed/Documents/Code/repos/cunyf_enrollme/class-status-logs'
-    fp = os.path.join(dir, xlsx_f)
+    dir = 'C:/Users/Zed/Documents/Code/repos/cunyf_enrollme/class-status-logs/'
+    current_date = now.strftime("%Y%m%d")
+    date_dir = dir + current_date
+    # make date specific directory
+    if os.path.exists(date_dir):
+        print("Folder /" + current_date_time + "/ already exists" + '\n')
+    else:
+        print("Created folder /" + current_date_time + '/\n')
+        os.makedirs(date_dir)
+
+    fp = os.path.join(date_dir, xlsx_f)
     # Save the workbook
     workbook.save(fp)
 
-    print("Created XLSX file named:" + '\n\t' + xlsx_f)
+    print("Created XLSX file named:" + '\n\t' + xlsx_f + '\n')
 
     wb = load_workbook(fp)
     ws = wb['Sheet']
 
     # update xlsx
     updateXLSX(ws)
-
-    # save and close updated xlsx file
     wb.save(fp)
     wb.close()
-    print("XLSX file contents updated!" + "\n")
+    
+    # rename xlsx file if class im eyeing on is open
+    found_csc = False
+    found_open = False
+    class_i_want = "  CSC 31160 - Intro to Blockchain"
+    # class_i_want = "  CSC 34200 - Computer Organization"
+    for row in ws.iter_rows():
+        if row[0].value in class_i_want:
+            found_csc = True
+            print("Found" + class_i_want)
+            for cell in row:
+                if cell.value == "Open":
+                    found_open = True
+                    print(class_i_want, "is open" + '\n')
+                
+    if found_csc and found_open:
+        new_xlsx = '~' + xlsx_f
+        new_fp = os.path.join(date_dir, new_xlsx)
+        os.rename(fp, new_fp)
+        print("XLSX file renamed to:" + '\n\t' + new_xlsx + '\n')
+    else:
+        print(class_i_want, "is NOT open" + '\n')
 
-def updateXLSX(ws):
+def updateXLSX_cols_rows(ws):
     # Update column width
     ws.column_dimensions['A'].width = 40
     ws.column_dimensions['B'].width = 20
@@ -222,7 +246,7 @@ def updateXLSX(ws):
         for cell in row:
             cell.alignment = openpyxl.styles.Alignment(wrap_text=True)
         row[0].parent.auto_size = True
-
+def colorXLSX_data(ws):
     # WANTED courses      
     desired_courses = ['  CSC 30100 - Scientific Prgrmng',
                        '  CSC 30400 - Intro to Theoretical Comp Sci',
@@ -329,6 +353,14 @@ def updateXLSX(ws):
             elif 'Closed' in cell.value:
                 cell.fill = fillBlue
 
+def updateXLSX(ws):
+    # update columns and rows
+    updateXLSX_cols_rows(ws)
+    # color code cells
+    colorXLSX_data(ws)
+
+    
+
 while True:
     try:
         term = input("Enter semester (fall, winter, spring, summer): ")
@@ -363,6 +395,9 @@ while True:
 
     print("Data scraped successfully!")
     driver.quit()
-    print("Starting up again in 60 seconds.")
+    print("Page closed down." + '\n')
+    time.sleep(3)
+
+    print("Scraping again in 60 seconds.")
     time.sleep(60)
     
