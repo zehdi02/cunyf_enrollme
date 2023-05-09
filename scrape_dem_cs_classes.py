@@ -25,7 +25,7 @@ term = ''
 term_options = []
 show_open = ''
 
-# data lists
+# data buffers to store information scraped
 cs_title_list = []
 cs_section_list = []
 cs_DnT_list = []
@@ -92,6 +92,9 @@ def autoPage3():
     print("showing ALL Courses..." + '\n')
     time.sleep(1)
     scrapeSearch()
+    now = datetime.now()
+    current_date_time = now.strftime("%H:%M:%S")
+    print("Time courses were scraped:", current_date_time, '\n')
 
 def scrapeSearch():
     # Show all classes
@@ -148,27 +151,19 @@ def scrapeSearch():
         except NoSuchElementException:
             print('\n' + "Finished collecting all CS courses data.")
             print(i, 'CS Courses found.')
-            print(cs_classes_sum, 'CS Class Sections in total.' + '\n')
+            print(cs_classes_sum, 'CS Class Sections in total.')
             break
 
 def importXLSX():
-    # Import data to xlsx
-    header = ["Course", "Section", "Days & Time", "Availability", "Instructors", "Mode"]
-    data = []
-    for i in range(len(cs_title_list)):
-        data.append((cs_title_list[i], cs_section_list[i], cs_DnT_list[i], cs_availability_list[i], cs_instructors_list[i], cs_mode_list[i]))
-
     # Create a new workbook
     workbook = openpyxl.Workbook()
-
     # Select the active worksheet
     worksheet = workbook.active
 
     # Set the header row
     header = ["Course", "Section", "Days & Time", "Availability", "Instructors", "Mode"]
     worksheet.append(header)
-
-    # Add the data
+    # Add the data to rows after header
     for i in range(len(cs_title_list)):
         row = [cs_title_list[i], cs_section_list[i], cs_DnT_list[i], cs_availability_list[i], cs_instructors_list[i], cs_mode_list[i]]
         worksheet.append(row)
@@ -177,29 +172,30 @@ def importXLSX():
     now = datetime.now()
     current_date_time = now.strftime("%Y%m%d-%H%M")
 
+    # set the file's name
     xlsx_f = str(current_date_time) + "_" + term.upper() + "_CCNY_CS_Classes.xlsx"
-
     # specify directory/file path
     dir = 'C:/Users/Zed/Documents/Code/repos/cunyf_enrollme/class-status-logs/'
+    # set date-specific folder name
     current_date = now.strftime("%Y%m%d")
-    date_dir = dir + current_date
+    date_dir = os.path.join(dir, current_date)
     # make date specific directory
     if os.path.exists(date_dir):
         print("Folder /" + current_date_time + "/ already exists" + '\n')
     else:
         print("Created folder /" + current_date_time + '/\n')
         os.makedirs(date_dir)
-
     fp = os.path.join(date_dir, xlsx_f)
+
     # Save the workbook
     workbook.save(fp)
-
+    workbook.close()
     print("Created XLSX file named:" + '\n\t' + xlsx_f + '\n')
 
     wb = load_workbook(fp)
     ws = wb['Sheet']
 
-    # update xlsx
+    # update xlsx column and row sizes and color fills
     updateXLSX(ws)
     wb.save(fp)
     wb.close()
@@ -207,8 +203,8 @@ def importXLSX():
     # rename xlsx file if class im eyeing on is open
     found_csc = False
     found_open = False
-    # class_i_want = "  CSC 31160 - Intro to Blockchain"
-    class_i_want = "  CSC 34200 - Computer Organization"
+    # write the class you want in class_i_want
+    # class_i_want = "  CSC 34200 - Computer Organization"
     for row in ws.iter_rows():
         if row[0].value in class_i_want:
             found_csc = True
@@ -219,7 +215,7 @@ def importXLSX():
                     print(class_i_want, "is open" + '\n')
                 
     if found_csc and found_open:
-        new_xlsx = class_i_want + '_' + xlsx_f
+        new_xlsx = '~' + xlsx_f
         new_fp = os.path.join(date_dir, new_xlsx)
         os.rename(fp, new_fp)
         print("XLSX file renamed to:" + '\n\t' + new_xlsx + '\n')
@@ -241,11 +237,13 @@ def updateXLSX_cols_rows(ws):
         cell.alignment = openpyxl.styles.Alignment(wrap_text=True)
     for cell in ws['E:E']:
         cell.alignment = openpyxl.styles.Alignment(wrap_text=True)
+    print("Columns width resized to fit")
     # set the row height to auto adjust for all rows
     for row in ws.iter_rows():
         for cell in row:
             cell.alignment = openpyxl.styles.Alignment(wrap_text=True)
         row[0].parent.auto_size = True
+    print("Rows height resized to fit")
 def colorXLSX_data(ws):
     # WANTED courses      
     desired_courses = ['  CSC 30100 - Scientific Prgrmng',
@@ -352,7 +350,7 @@ def colorXLSX_data(ws):
                 cell.fill = fillGreen
             elif 'Closed' in cell.value:
                 cell.fill = fillBlue
-
+    print("Cells color coded" + '\n')
 def updateXLSX(ws):
     # update columns and rows
     updateXLSX_cols_rows(ws)
@@ -360,30 +358,35 @@ def updateXLSX(ws):
     colorXLSX_data(ws)
 
     
-
+# user input semester
 while True:
     try:
-        term = input("Enter semester (fall, winter, spring, summer): ")
+        term = input("Enter SEMESTER (fall, winter, spring, summer): ")
         if term.lower() not in ["fall", "winter", "spring", "summer"]:
             raise ValueError("Invalid semester entered.")
         break
     except ValueError as e:
         print(e)
 
+# user decides whether to show all courses, or only available courses
 while True:
     try:
-        show_open = input("Show Open classes only (yes/no)?: ")
+        show_open = input("Show OPEN classes ONLY (yes/no)?: ")
         if show_open.lower() not in ['yes', 'no']:
             raise ValueError("Please enter 'yes' or 'no'")
         break
     except ValueError as e:
         print(e)
 
+class_i_want =  input("What class are you eyeing for:")
+
 while True:
     url = 'https://globalsearch.cuny.edu/CFGlobalSearchTool/search.jsp'
 
     options = webdriver.ChromeOptions()
     options.add_experimental_option("detach", True)
+    # prevent browser from opening. running in the background.
+    options.add_argument('--headless')
 
     driver = webdriver.Chrome(options=options)
     driver.get(url)
@@ -393,11 +396,20 @@ while True:
     autoPage3()
     importXLSX()
 
+    # reset data that was scraped for next iteration
+    cs_title_list = []
+    cs_section_list = []
+    cs_DnT_list = []
+    cs_availability_list = []
+    cs_instructors_list = []
+    cs_mode_list = []
+
     print("Data scraped successfully!")
     driver.quit()
     print("Page closed down." + '\n')
     time.sleep(3)
 
-    print("Scraping again in 60 seconds.")
-    time.sleep(60)
+    print("Scraping again in 30 seconds.")
+    print("========================================")
+    time.sleep(32)
     

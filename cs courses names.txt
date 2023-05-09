@@ -3,3 +3,9 @@
 
 "  CSC 31800 - Internet Programming"
 "  CSC 34200 - Computer Organization"
+"  CSC 45600 - Topics in Software Engineering"
+"  CSC 44700 - Introduction to Machine Learni"
+"  CSC 44800 - Artificial Intelligence"
+"  CSC 47300 - Web Site Design"
+"  CSC 59866 - Senior Project I"
+"  CSC 59867 - Senior Project II"
