@@ -1,1 +1,1 @@
-cs_courses
+"  CSC 34200 - Computer Organization"

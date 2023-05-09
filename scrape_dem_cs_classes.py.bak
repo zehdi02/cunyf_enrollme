@@ -182,7 +182,8 @@ def importXLSX():
     # specify directory/file path
     dir = 'C:/Users/Zed/Documents/Code/repos/cunyf_enrollme/class-status-logs/'
     current_date = now.strftime("%Y%m%d")
-    date_dir = dir + current_date
+    # date_dir = dir + current_date
+    date_dir = os.path.join(dir, current_date)
     # make date specific directory
     if os.path.exists(date_dir):
         print("Folder /" + current_date_time + "/ already exists" + '\n')
@@ -199,32 +200,33 @@ def importXLSX():
     wb = load_workbook(fp)
     ws = wb['Sheet']
 
-    # update xlsx
+    # update xlsx column and row sizes and color fills
     updateXLSX(ws)
     wb.save(fp)
     wb.close()
     
     # rename xlsx file if class im eyeing on is open
-    found_csc = False
-    found_open = False
-    class_i_want = "  CSC 31160 - Intro to Blockchain"
+    # found_csc = False
+    # found_open = False
+    # # write the class you want in class_i_want
+    # # class_i_want = "  CSC 31160 - Intro to Blockchain"
     # class_i_want = "  CSC 34200 - Computer Organization"
-    for row in ws.iter_rows():
-        if row[0].value in class_i_want:
-            found_csc = True
-            print("Found" + class_i_want)
-            for cell in row:
-                if cell.value == "Open":
-                    found_open = True
-                    print(class_i_want, "is open" + '\n')
+    # for row in ws.iter_rows():
+    #     if row[0].value in class_i_want:
+    #         found_csc = True
+    #         print("Found" + class_i_want)
+    #         for cell in row:
+    #             if cell.value == "Open":
+    #                 found_open = True
+    #                 print(class_i_want, "is open" + '\n')
                 
-    if found_csc and found_open:
-        new_xlsx = '~' + xlsx_f
-        new_fp = os.path.join(date_dir, new_xlsx)
-        os.rename(fp, new_fp)
-        print("XLSX file renamed to:" + '\n\t' + new_xlsx + '\n')
-    else:
-        print(class_i_want, "is NOT open" + '\n')
+    # if found_csc and found_open:
+    #     new_xlsx = '~' + xlsx_f
+    #     new_fp = os.path.join(date_dir, new_xlsx)
+    #     os.rename(fp, new_fp)
+    #     print("XLSX file renamed to:" + '\n\t' + new_xlsx + '\n')
+    # else:
+    #     print(class_i_want, "is NOT open" + '\n')
 
 def updateXLSX_cols_rows(ws):
     # Update column width
@@ -241,11 +243,13 @@ def updateXLSX_cols_rows(ws):
         cell.alignment = openpyxl.styles.Alignment(wrap_text=True)
     for cell in ws['E:E']:
         cell.alignment = openpyxl.styles.Alignment(wrap_text=True)
+    print("Columns width resized to fit")
     # set the row height to auto adjust for all rows
     for row in ws.iter_rows():
         for cell in row:
             cell.alignment = openpyxl.styles.Alignment(wrap_text=True)
         row[0].parent.auto_size = True
+    print("Rows height resized to fit")
 def colorXLSX_data(ws):
     # WANTED courses      
     desired_courses = ['  CSC 30100 - Scientific Prgrmng',
@@ -352,7 +356,7 @@ def colorXLSX_data(ws):
                 cell.fill = fillGreen
             elif 'Closed' in cell.value:
                 cell.fill = fillBlue
-
+    print("Cells color coded" + '\n')
 def updateXLSX(ws):
     # update columns and rows
     updateXLSX_cols_rows(ws)
