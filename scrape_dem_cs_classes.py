@@ -247,13 +247,9 @@ def updateXLSX_cols_rows(ws):
 def colorXLSX_data(ws):
     # WANTED courses      
     desired_courses = ['  CSC 30100 - Scientific Prgrmng',
-                       '  CSC 30400 - Intro to Theoretical Comp Sci',
-                       '  CSC 31800 - Internet Programming',
-                       '  CSC 33500 - Programming Language Paradigms',
                        '  CSC 33600 - Database Systems',
                        '  CSC 34200 - Computer Organization',
                        '  CSC 34300 - Computer Systems Design Lab',
-                       '  CSC 41200 - Computer Networks',
                        '  CSC 44700 - Introduction to Machine Learni',
                        '  CSC 44800 - Artificial Intelligence',
                        '  CSC 45600 - Topics in Software Engineering',
@@ -270,10 +266,14 @@ def colorXLSX_data(ws):
                 cell.fill = fillAqua
 
     # CURRENTLY taking courses
-    current_courses = ['  CSC 34200 - Computer Organization',
-                       '  CSC 34300 - Computer Systems Design Lab',
-                       '  CSC 38000 - Computer Security',
-                       '  CSC 32200 - Software Engineering',
+    current_courses = [
+                    #    '  CSC 34200 - Computer Organization',
+                    #    '  CSC 34300 - Computer Systems Design Lab',
+                       '  CSC 31800 - Internet Programming',
+                       '  CSC 41200 - Computer Networks',
+                       '  CSC 30400 - Intro to Theoretical Comp Sci',
+                       '  CSC 33500 - Programming Language Paradigms',
+                       '  CSC 59866 - Senior Project I',
                     #    '',
                        ]
     # orange = currently taking
@@ -285,14 +285,11 @@ def colorXLSX_data(ws):
 
     # NEEDED courses      
     needed_courses = ['  CSC 30100 - Scientific Prgrmng',
-                       '  CSC 30400 - Intro to Theoretical Comp Sci',
-                    #    '  CSC 31800 - Internet Programming',
-                       '  CSC 33500 - Programming Language Paradigms',
                        '  CSC 33600 - Database Systems',
-                    #    '  CSC 34200 - Computer Organization',
-                    #    '  CSC 34300 - Computer Systems Design Lab',
-                       '  CSC 59866 - Senior Project I',
+                       '  CSC 34200 - Computer Organization',
+                       '  CSC 34300 - Computer Systems Design Lab',
                        '  CSC 59867 - Senior Project II',
+                       '  CSC 33600 - Database Systems',
                     #    '',
                        ]
     # purple = classes i need to take
@@ -303,19 +300,20 @@ def colorXLSX_data(ws):
                 cell.fill = fillPurple
 
     # NEXT semester planned classes
-    next_courses = [#'  CSC 30100 - Scientific Prgrmng',
-                       '  CSC 30400 - Intro to Theoretical Comp Sci',
-                       '  CSC 31800 - Internet Programming',
-                       '  CSC 41200 - Computer Networks',
-                       '  CSC 33500 - Programming Language Paradigms',
-                       '  CSC 33600 - Database Systems',
+    next_courses = [   '  CSC 30100 - Scientific Prgrmng',
+                    #    '  CSC 30400 - Intro to Theoretical Comp Sci',
+                    #    '  CSC 31800 - Internet Programming',
+                    #    '  CSC 41200 - Computer Networks',
+                    #    '  CSC 33500 - Programming Language Paradigms',
                     #    '  CSC 34200 - Computer Organization',
                     #    '  CSC 34300 - Computer Systems Design Lab',
-                       '  CSC 59866 - Senior Project I',
-                    #    '  CSC 59867 - Senior Project II',
+                    #    '  CSC 59866 - Senior Project I',
+                       '  CSC 59867 - Senior Project II',
+                       '  CSC 45600 - Topics in Software Engineering',
+                       '  CSC 44700 - Introduction to Machine Learni',
                     #    '',
                        ]
-    # purple = classes i need to take
+    # yellow = classes NEXT semester
     fillYellow = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
     for row in ws.iter_rows():
         if row[0].value in next_courses:
@@ -332,6 +330,8 @@ def colorXLSX_data(ws):
                      '  CSC 22000 - Algorithms',
                      '  CSC 22100 - Software Design Laboratory',
                      '  CSC 33200 - Operating Systems',
+                        '  CSC 38000 - Computer Security',
+                        '  CSC 32200 - Software Engineering',
                      ]
     # gray = <courses already taken>
     fillGray = PatternFill(start_color='B2BEB5', end_color='B2BEB5', fill_type='solid')
@@ -409,7 +409,10 @@ while True:
     print("Page closed down." + '\n')
     time.sleep(3)
 
-    print("Scraping again in 30 seconds.")
+    # print("Scraping again in 30 seconds.")
+    # print("========================================")
+    # time.sleep(32)
+    print("Scraping again in 90 seconds.")
     print("========================================")
-    time.sleep(32)
+    time.sleep(92)
     
